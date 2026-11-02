@@ -1,7 +1,11 @@
 const { Router } = require("express");
+const auth = require("../../shared/auth.middleware"); // adjust path if different
 const {
   registerUser,
+  verifyEmail,
   loginUser,
+  googleLogin,
+  completeGoogleRegistration,
   forgotPassword,
   verifyResetToken,
   resetPassword,
@@ -9,19 +13,13 @@ const {
 
 const router = Router();
 
-// Register route
 router.post("/register", registerUser);
-
-// Login route
+router.post("/verify-email", verifyEmail);
 router.post("/login", loginUser);
-
-// Forgot password
+router.post("/google-login", googleLogin);
+router.post("/complete-google-registration", auth, completeGoogleRegistration);
 router.post("/forgot-password", forgotPassword);
-
-// Verify reset token
 router.post("/verify-reset-token", verifyResetToken);
-
-// Reset password
 router.post("/reset-password", resetPassword);
 
 module.exports = router;

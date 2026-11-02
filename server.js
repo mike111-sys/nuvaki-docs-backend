@@ -50,25 +50,25 @@ app.use(cors(corsOptions));
 app.options("*", cors(corsOptions)); // For preflight
 
 // ✅ Serve static files from uploads directory
-app.use('/biz-kit-backend/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ✅ Body parsers
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // ✅ Routes
-app.use("/biz-kit-backend/api/dashboard", dashboardRoutes);
-app.use("/biz-kit-backend/api/auth", authRoutes);
-app.use("/biz-kit-backend/api/user", userRoutes);
-app.use("/biz-kit-backend/api/users/trials", trialsRoutes);
-app.use("/biz-kit-backend/api/invoices", invoiceRoutes);
-app.use("/biz-kit-backend/api/receipts", receiptRoutes);
-app.use("/biz-kit-backend/api/quotations", quotationRoutes);
-app.use("/biz-kit-backend/api/contracts", contractRoutes);
-app.use("/biz-kit-backend/api/payments", paymentsRoutes);
-app.use("/biz-kit-backend/api/customers", customerRoutes);
-app.use("/biz-kit-backend/api/payments-users", paymentsUsersRoutes);
-app.use("/biz-kit-backend/api/admin", adminRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/users/trials", trialsRoutes);
+app.use("/api/invoices", invoiceRoutes);
+app.use("/api/receipts", receiptRoutes);
+app.use("/api/quotations", quotationRoutes);
+app.use("/api/contracts", contractRoutes);
+app.use("/api/payments", paymentsRoutes);
+app.use("/api/customers", customerRoutes);
+app.use("/api/payments-users", paymentsUsersRoutes);
+app.use("/api/admin", adminRoutes);
 
 // ✅ Error handler
 app.use((err, req, res, next) => {

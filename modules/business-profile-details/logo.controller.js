@@ -71,7 +71,7 @@ const uploadLogo = async (req, res) => {
 
     // 3. Save new logo
     const fileName = req.file.filename;
-    const fileUrl = `/uploads/logos/${fileName}`;
+    const fileUrl = `/api/uploads/logos/${fileName}`;
 
     await updateUserLogo(req.user.id, fileUrl);
 
