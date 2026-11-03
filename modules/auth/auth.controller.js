@@ -4,35 +4,37 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const { OAuth2Client } = require("google-auth-library");
 const usersModel = require("../user/users.model");
+const pendingModel = require("./pendingRegistrationsModel");
 const { sendWelcomeEmail } = require("../../shared/email.service");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// ---------- Helper: SMTP transporter ----------
+// ---------- Helpers ----------
 const getTransporter = () =>
   nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === "true",  // ← FIX: reads from .env
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    // Add these for faster failure diagnosis (optional but recommended)
+    secure: process.env.SMTP_SECURE === "true",
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
     connectionTimeout: 10000,
     greetingTimeout: 10000,
   });
 
-// ---------- Helper: sign JWT ----------
-const signToken = (user) =>
+const signUserToken = (user) =>
   jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "24h" });
 
+const signPendingToken = (pendingId, email) =>
+  jwt.sign(
+    { pendingId, email, purpose: "pending-registration" },
+    process.env.JWT_SECRET,
+    { expiresIn: "2h" }
+  );
+
 // ============================================================
-// REGISTER (Email/SMTP)
+// REGISTER (Email) — writes to pending_registrations ONLY
 // ============================================================
 const registerUser = async (req, res) => {
   const {
-    id,
     name,
     business_name,
     phone_number,
@@ -43,11 +45,13 @@ const registerUser = async (req, res) => {
 
   try {
     if (!email_address || !password || !name) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Name, email and password are required" });
+      return res.status(400).json({
+        success: false,
+        message: "Name, email and password are required",
+      });
     }
 
+    // Already a real user?
     const existing = await usersModel.findUserByEmail(email_address);
     if (existing) {
       return res
@@ -58,20 +62,18 @@ const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const verificationToken = crypto.randomBytes(32).toString("hex");
     const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const pendingId = crypto.randomUUID();
 
-    const userId = id || crypto.randomUUID();
-
-    await usersModel.createUser({
-      id: userId,
+    // Save to PENDING table — NOT users_information
+    await pendingModel.upsertPending({
+      id: pendingId,
+      type: "email",
       name,
+      email_address,
+      password: hashedPassword,
       business_name: business_name || null,
       phone_number: phone_number || null,
       country: country || null,
-      email_address,
-      password: hashedPassword,
-      trials: 5,
-      created_at: new Date(),
-      email_verified: 0,
       verification_token: verificationToken,
       verification_expiry: verificationExpiry,
     });
@@ -93,26 +95,20 @@ const registerUser = async (req, res) => {
       });
     } catch (emailErr) {
       console.error("SMTP send failed:", emailErr.message);
-      console.error("SMTP config at send time:", {
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT,
-        secureRaw: process.env.SMTP_SECURE,
-        secureResolved: process.env.SMTP_SECURE === "true",
+      // Rollback the pending row so the user can retry cleanly
+      await pendingModel.deleteById(pendingId);
+      return res.status(500).json({
+        success: false,
+        message: "Could not send verification email. Please try again.",
       });
-      console.error("SMTP full error:", emailErr);
     }
 
     return res.status(200).json({
       success: true,
-      message: "Registration successful. Check your email to verify.",
+      message: "Verification email sent. Check your inbox to complete registration.",
     });
   } catch (error) {
     console.error("registerUser error:", error);
-    if (error.code === "ER_DUP_ENTRY") {
-      return res
-        .status(409)
-        .json({ success: false, message: "Email already exists" });
-    }
     return res
       .status(500)
       .json({ success: false, message: "Failed to register user" });
@@ -120,7 +116,7 @@ const registerUser = async (req, res) => {
 };
 
 // ============================================================
-// VERIFY EMAIL
+// VERIFY EMAIL — promotes pending row into users_information
 // ============================================================
 const verifyEmail = async (req, res) => {
   const { token } = req.body;
@@ -128,22 +124,53 @@ const verifyEmail = async (req, res) => {
     return res.status(400).json({ success: false, message: "Token required" });
   }
   try {
-    const user = await usersModel.findUserByVerificationToken(token);
-    if (!user) {
+    const pending = await pendingModel.findByToken(token);
+    if (!pending) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired verification token",
+      });
+    }
+
+    // Double-check the email wasn't claimed in the meantime
+    const claimed = await usersModel.findUserByEmail(pending.email_address);
+    if (claimed) {
+      await pendingModel.deleteById(pending.id);
       return res
-        .status(400)
-        .json({ success: false, message: "Invalid or expired token" });
-    }
-    await usersModel.markEmailVerified(user.id);
-
-    // Fire welcome email (optional)
-    if (user.email_address) {
-      sendWelcomeEmail({ to: user.email_address, name: user.name }).catch(
-        (e) => console.error("Welcome email failed:", e.message)
-      );
+        .status(409)
+        .json({ success: false, message: "Email already registered" });
     }
 
-    return res.json({ success: true, message: "Email verified" });
+    // NOW create the real user — verified
+    const userId = crypto.randomUUID();
+    await usersModel.createUser({
+      id: userId,
+      name: pending.name,
+      business_name: pending.business_name,
+      phone_number: pending.phone_number,
+      country: pending.country,
+      email_address: pending.email_address,
+      password: pending.password, // already hashed
+      trials: 5,
+      created_at: new Date(),
+      email_verified: 1,
+      verification_token: null,
+      verification_expiry: null,
+    });
+
+    // Clean up pending
+    await pendingModel.deleteById(pending.id);
+
+    // Welcome email (fire & forget)
+    sendWelcomeEmail({
+      to: pending.email_address,
+      name: pending.name,
+    }).catch((e) => console.error("Welcome email failed:", e.message));
+
+    return res.json({
+      success: true,
+      message: "Email verified. You can now log in.",
+    });
   } catch (error) {
     console.error("verifyEmail error:", error);
     return res
@@ -157,7 +184,6 @@ const verifyEmail = async (req, res) => {
 // ============================================================
 const loginUser = async (req, res) => {
   const { email_address, password } = req.body;
-
   try {
     const user = await usersModel.findUserByEmail(email_address);
     if (!user) {
@@ -165,31 +191,26 @@ const loginUser = async (req, res) => {
         .status(401)
         .json({ success: false, message: "Invalid email or password" });
     }
-
     if (!user.password) {
       return res.status(401).json({
         success: false,
         message: "This account uses Google sign-in. Please log in with Google.",
       });
     }
-
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       return res
         .status(401)
         .json({ success: false, message: "Invalid email or password" });
     }
-
     if (!user.email_verified) {
       return res.status(403).json({
         success: false,
         message: "Please verify your email before logging in.",
       });
     }
-
     const { password: _, ...userData } = user;
-    const token = signToken(user);
-
+    const token = signUserToken(user);
     return res.status(200).json({
       success: true,
       message: "Login successful",
@@ -205,11 +226,10 @@ const loginUser = async (req, res) => {
 };
 
 // ============================================================
-// GOOGLE LOGIN
+// GOOGLE LOGIN — writes to pending_registrations ONLY (for new users)
 // ============================================================
 const googleLogin = async (req, res) => {
   const { idToken } = req.body;
-
   if (!idToken) {
     return res
       .status(400)
@@ -224,45 +244,50 @@ const googleLogin = async (req, res) => {
     const payload = ticket.getPayload();
     const { email, name, sub: googleId, email_verified } = payload;
 
-    let user = await usersModel.findUserByEmail(email);
-    let isNewUser = false;
-
-    if (!user) {
-      // New user — create a stub record, they'll complete profile in GoogleNextStep
-      isNewUser = true;
-      const newId = crypto.randomUUID();
-      await usersModel.createUser({
-        id: newId,
-        name: name || email.split("@")[0],
-        business_name: null,
-        phone_number: null,
-        country: null,
-        email_address: email,
-        password: null,
-        trials: 5,
-        created_at: new Date(),
-        email_verified: email_verified ? 1 : 0,
-        google_id: googleId,
+    // Existing user → normal login
+    const existingUser = await usersModel.findUserByEmail(email);
+    if (existingUser) {
+      // Link google_id if not linked
+      if (!existingUser.google_id) {
+        await usersModel.updateUserFields(existingUser.id, {
+          google_id: googleId,
+        });
+      }
+      const token = signUserToken(existingUser);
+      return res.status(200).json({
+        success: true,
+        isNewUser: false,
+        token,
+        user: {
+          id: existingUser.id,
+          name: existingUser.name,
+          email: existingUser.email_address,
+          business_name: existingUser.business_name,
+          country: existingUser.country,
+          phone_number: existingUser.phone_number,
+        },
       });
-      user = await usersModel.findUserByEmail(email);
-    } else if (!user.google_id) {
-      // Existing email user logging in with Google — link google_id
-      await usersModel.updateUserFields(user.id, { google_id: googleId });
     }
-    const token = signToken(user);
+
+    // New user → save pending, return a pending-only JWT
+    const pendingId = crypto.randomUUID();
+    await pendingModel.upsertPending({
+      id: pendingId,
+      type: "google",
+      name: name || email.split("@")[0],
+      email_address: email,
+      google_id: googleId,
+      // Store Google's verification status in a temp way — we trust Google
+      // We'll set email_verified=1 at the moment of creation
+    });
+
+    const pendingToken = signPendingToken(pendingId, email);
 
     return res.status(200).json({
       success: true,
-      token,
-      isNewUser,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email_address,
-        business_name: user.business_name,
-        country: user.country,
-        phone_number: user.phone_number,
-      },
+      isNewUser: true,
+      pendingToken,
+      pendingUser: { name, email },
     });
   } catch (error) {
     console.error("googleLogin error:", error);
@@ -273,25 +298,68 @@ const googleLogin = async (req, res) => {
 };
 
 // ============================================================
-// COMPLETE GOOGLE REGISTRATION (protected route)
+// COMPLETE GOOGLE REGISTRATION — creates the real user
 // ============================================================
 const completeGoogleRegistration = async (req, res) => {
-  const userId = req.user.id; // set by auth middleware
+  const { pendingId } = req.pending;
   const { business_name, country, phone_number, password } = req.body;
 
   try {
-    const updates = {};
-    if (business_name) updates.business_name = business_name;
-    if (country) updates.country = country;
-    if (phone_number) updates.phone_number = phone_number;
-    if (password) updates.password = await bcrypt.hash(password, 10);
+    const pending = await pendingModel.findById(pendingId);
+    if (!pending) {
+      return res.status(400).json({
+        success: false,
+        message: "Pending registration expired. Please start again.",
+      });
+    }
 
-    // If user set a password, they can log in via email too → mark verified
-    if (password) updates.email_verified = 1;
+    // Guard against race (email now claimed)
+    const claimed = await usersModel.findUserByEmail(pending.email_address);
+    if (claimed) {
+      await pendingModel.deleteById(pendingId);
+      return res
+        .status(409)
+        .json({ success: false, message: "Email already registered" });
+    }
 
-    await usersModel.updateUserFields(userId, updates);
+    const hashedPassword = password
+      ? await bcrypt.hash(password, 10)
+      : null;
 
-    return res.json({ success: true, message: "Profile completed" });
+    // NOW create the real user
+    const userId = crypto.randomUUID();
+    await usersModel.createUser({
+      id: userId,
+      name: pending.name,
+      business_name: business_name || null,
+      phone_number: phone_number || null,
+      country: country || null,
+      email_address: pending.email_address,
+      password: hashedPassword,
+      trials: 5,
+      created_at: new Date(),
+      email_verified: 1, // Google already verified the email
+      google_id: pending.google_id,
+    });
+
+    await pendingModel.deleteById(pendingId);
+
+    // Issue the real JWT
+    const token = signUserToken({ id: userId });
+
+    return res.json({
+      success: true,
+      message: "Registration complete",
+      token,
+      user: {
+        id: userId,
+        name: pending.name,
+        email: pending.email_address,
+        business_name: business_name || null,
+        country: country || null,
+        phone_number: phone_number || null,
+      },
+    });
   } catch (error) {
     console.error("completeGoogleRegistration error:", error);
     return res
@@ -301,7 +369,7 @@ const completeGoogleRegistration = async (req, res) => {
 };
 
 // ============================================================
-// FORGOT / RESET PASSWORD (unchanged logic)
+// FORGOT / RESET PASSWORD (unchanged)
 // ============================================================
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -312,7 +380,6 @@ const forgotPassword = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Email not found" });
     }
-
     const token = crypto.randomBytes(32).toString("hex");
     const expires = Date.now() + 3600000;
     await usersModel.updateUserResetToken(email, token, expires);

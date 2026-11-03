@@ -2,8 +2,13 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const path = require("path");
+
+// ---- DB first (creates the pool) ----
+require("./shared/database");
+
+// ---- Route imports ----
 const authRoutes = require("./modules/auth/auth.routes");
-require("./shared/database"); // DB connection
 const dashboardRoutes = require("./modules/dashboard/dashboard.routes");
 const userRoutes = require("./modules/user/user.routes");
 const trialsRoutes = require("./modules/payments-and-trials/trials.routes");
@@ -16,11 +21,10 @@ const customerRoutes = require("./modules/business-profile-details/customer.rout
 const paymentsUsersRoutes = require("./modules/payments-and-users/payments-users.routes");
 const adminRoutes = require("./modules/admin/admin.routes");
 
+// ---- Pending model ----
+const pendingModel = require("./modules/auth/pendingRegistrationsModel");
 
 const app = express();
-
-const path = require("path");
-
 
 // ✅ CORS config
 const allowedOrigins = [
@@ -45,12 +49,11 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
-// ✅ Apply before routes
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // For preflight
+app.options("*", cors(corsOptions));
 
-// ✅ Serve static files from uploads directory
-app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
+// ✅ Static files
+app.use("/api/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ✅ Body parsers
 app.use(bodyParser.json());
@@ -73,13 +76,36 @@ app.use("/api/admin", adminRoutes);
 // ✅ Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res
-    .status(500)
-    .json({ message: "Something went wrong!", error: err.message });
+  res.status(500).json({ message: "Something went wrong!", error: err.message });
 });
 
 // ✅ Server start
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+
+  // Give the DB pool 3s to connect, then clean up expired pending rows.
+  // Then repeat every hour.
+  setTimeout(() => {
+    pendingModel
+      .cleanupExpired()
+      .then(() => console.log("🧹 Pending registrations cleaned"))
+      .catch((err) =>
+        console.error("Pending cleanup failed:", err.message)
+      );
+  }, 3000);
+
+  setInterval(() => {
+    pendingModel
+      .cleanupExpired()
+      .catch((err) =>
+        console.error("Pending cleanup failed:", err.message)
+      );
+  }, 60 * 60 * 1000);
+});
+
+// Graceful shutdown (optional but good practice on VPS)
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received, closing server...");
+  server.close(() => process.exit(0));
 });

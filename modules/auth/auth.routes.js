@@ -1,5 +1,5 @@
 const { Router } = require("express");
-const auth = require("../../shared/auth.middleware"); // adjust path if different
+const pendingAuth = require("./pendingAuth.middleware");
 const {
   registerUser,
   verifyEmail,
@@ -17,7 +17,7 @@ router.post("/register", registerUser);
 router.post("/verify-email", verifyEmail);
 router.post("/login", loginUser);
 router.post("/google-login", googleLogin);
-router.post("/complete-google-registration", auth, completeGoogleRegistration);
+router.post("/complete-google-registration", pendingAuth, completeGoogleRegistration);
 router.post("/forgot-password", forgotPassword);
 router.post("/verify-reset-token", verifyResetToken);
 router.post("/reset-password", resetPassword);
