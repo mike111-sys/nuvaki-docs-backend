@@ -45,9 +45,9 @@ const saveReceipt = async (req, res) => {
       tax_rate,
       total_amount,
       notes,
-      currency_code: currency_code || 'KES',
-  currency_symbol: currency_symbol || 'KSh',
-  currency_name: currency_name || 'Kenyan Shilling',
+      currency_code: currency_code || 'USD',
+  currency_symbol: currency_symbol || '$',
+  currency_name: currency_name || 'US Dollar',
     };
 
     // Create receipt
@@ -136,9 +136,9 @@ const updateReceipt = async (req, res) => {
       tax_rate,
       total_amount,
       notes,
-      currency_code: currency_code || 'KES',
-      currency_symbol: currency_symbol || 'KSh',
-      currency_name: currency_name || 'Kenyan Shilling',
+      currency_code: currency_code || 'USD',
+      currency_symbol: currency_symbol || '$',
+      currency_name: currency_name || 'US Dollar',
     };
 
     // Update receipt

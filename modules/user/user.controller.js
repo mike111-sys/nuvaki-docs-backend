@@ -199,9 +199,9 @@ const getCurrency = async (req, res) => {
     res.json({ 
       success: true, 
       currency: {
-        code: rows[0].currency_code || 'KES',
-        symbol: rows[0].currency_symbol || 'KSh',
-        name: rows[0].currency_name || 'Kenyan Shilling'
+        code: rows[0].currency_code || 'USD',
+        symbol: rows[0].currency_symbol || '$',
+        name: rows[0].currency_name || 'US Dollar'
       }
     });
   } catch (error) {

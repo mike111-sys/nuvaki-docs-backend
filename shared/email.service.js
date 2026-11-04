@@ -24,7 +24,7 @@ transporter
   .then(() => console.log("📧 SMTP ready:", process.env.SMTP_HOST))
   .catch((err) => console.error("❌ SMTP verify failed:", err.message));
 
-const FROM = `"${process.env.SMTP_FROM_NAME || "Biz Kit Kenya"}" <${
+const FROM = `"${process.env.SMTP_FROM_NAME || "Nuvaki Docs"}" <${
   process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER
 }>`;
 
@@ -52,15 +52,15 @@ const layout = (innerHtml) => `
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Biz Kit Kenya</title>
+  <title>Nuvaki Docs</title>
 </head>
 <body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 20px;">
     <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:32px 28px;">
       <div style="margin-bottom:24px;">
         <img
-          src="https://bizkitkenya.co.ke/assets/kenyan-flag-BuJecBcf.png"
-          alt="Biz Kit Kenya"
+          src="https://nuvakidocs.com/assets/logo-BuJecBcf.png"
+          alt="Nuvaki Docs"
           width="40"
           style="display:block;max-width:140px;height:auto;border:0;"
         />
@@ -68,8 +68,8 @@ const layout = (innerHtml) => `
       ${innerHtml}
     </div>
     <p style="font-size:11px;color:#94a3b8;text-align:center;margin-top:20px;line-height:1.5;">
-      Biz Kit Kenya · Nairobi, Kenya<br/>
-      You're receiving this because you signed up at bizkitkenya.co.ke
+      Nuvaki Docs · <br/>
+      You're receiving this because you signed up at nuvakidocs.com
     </p>
   </div>
 </body>
@@ -85,26 +85,26 @@ const sendWelcomeEmail = async ({ to, name }) => {
   // Plain-text fallback (very important for deliverability)
   const text = `Hi ${safeName},
 
-Thanks for signing up for Biz Kit Kenya.
+Thanks for signing up for Nuvaki Docs.
 
 You can now create, save and print professional invoices, receipts,
 quotations and contracts -- all in one place.
 
-Get started: https://bizkitkenya.co.ke/login
+Get started: https://nuvakidocs.com/login
 
 Need help? Just reply to this email.
 
 -- 
-Biz Kit Kenya
-https://bizkitkenya.co.ke`;
+Nuvaki Docs
+https://nuvakidocs.com`;
 
   return sendMail({
     to,
-    subject: "Welcome to Biz Kit Kenya",
+    subject: "Welcome to Nuvaki Docs",
     text,
     html: layout(`
       <h1 style="font-size:20px;margin:0 0 12px;color:#0f172a;">
-        Welcome to Biz Kit Kenya
+        Welcome to Nuvaki Docs
       </h1>
       <p style="font-size:15px;line-height:1.6;color:#475569;margin:0 0 14px;">
         Hi ${safeName},
@@ -115,8 +115,8 @@ https://bizkitkenya.co.ke`;
       </p>
       <p style="font-size:15px;line-height:1.6;color:#475569;margin:0 0 22px;">
         Get started by logging in:
-        <a href="https://bizkitkenya.co.ke/login" style="color:#0d9488;">
-          https://bizkitkenya.co.ke/login
+        <a href="https://nuvakidocs.com/login" style="color:#0d9488;">
+          https://nuvakidocs.com/login
         </a>
       </p>
       <p style="font-size:13px;color:#64748b;margin:0;">

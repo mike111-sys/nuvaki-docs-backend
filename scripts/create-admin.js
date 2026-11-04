@@ -6,7 +6,7 @@ const pool = require("../shared/database");
 
 (async () => {
   const name     = process.argv[2] || "Super Admin";
-  const email    = (process.argv[3] || "admin@bizkitkenya.co.ke").toLowerCase();
+  const email    = (process.argv[3] || "info@nuvakidocs.com").toLowerCase();
   const password = process.argv[4] || "ChangeMe123!";
   const role     = process.argv[5] || "super_admin";
 

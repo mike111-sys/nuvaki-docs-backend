@@ -69,7 +69,7 @@ const saveContract = async (req, res) => {
       termination_clause: contractData.termination_clause,
       confidentiality_clause: contractData.confidentiality_clause || false,
       dispute_resolution: contractData.dispute_resolution,
-      governing_law: contractData.governing_law || 'Kenya',
+      governing_law: contractData.governing_law || 'USA',
       
       // Signatures
       party_a_signature: contractData.party_a_signature,
@@ -83,9 +83,9 @@ const saveContract = async (req, res) => {
       status: contractData.status || 'draft',
       notes: contractData.notes,
       // ✅ ADD CURRENCY FIELDS
-      currency_code: contractData.currency_code || 'KES',
-      currency_symbol: contractData.currency_symbol || 'KSh',
-      currency_name: contractData.currency_name || 'Kenyan Shilling',
+      currency_code: contractData.currency_code || 'USD',
+      currency_symbol: contractData.currency_symbol || '$',
+      currency_name: contractData.currency_name || 'US Dollar',
     });
 
     res.status(201).json({ 
@@ -178,9 +178,9 @@ const updateContract = async (req, res) => {
       status: contractData.status,
       notes: contractData.notes,
       // ✅ ADD CURRENCY FIELDS
-      currency_code: contractData.currency_code || 'KES',
-      currency_symbol: contractData.currency_symbol || 'KSh',
-      currency_name: contractData.currency_name || 'Kenyan Shilling',
+      currency_code: contractData.currency_code || 'USD',
+      currency_symbol: contractData.currency_symbol || '$',
+      currency_name: contractData.currency_name || 'US Dollar',
     });
 
     if (!updated) {

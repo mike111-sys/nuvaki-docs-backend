@@ -85,10 +85,10 @@ const registerUser = async (req, res) => {
       await transporter.sendMail({
         from: process.env.SMTP_USER,
         to: email_address,
-        subject: "Verify your Biz Kit Kenya account",
+        subject: "Verify your Nuvaki Docs account",
         html: `
           <p>Hi ${name},</p>
-          <p>Thanks for signing up to Biz Kit Kenya!</p>
+          <p>Thanks for signing up to Nuvaki Docs!</p>
           <p>Click the link below to verify your email. This link expires in 24 hours.</p>
           <p><a href="${verifyLink}">${verifyLink}</a></p>
         `,
@@ -389,7 +389,7 @@ const forgotPassword = async (req, res) => {
     await transporter.sendMail({
       from: process.env.SMTP_USER,
       to: email,
-      subject: "Biz Kit Kenya - Password Reset",
+      subject: "Nuvaki Docs - Password Reset",
       html: `
         <p>Hello,</p>
         <p>Click the link below to reset your password:</p>

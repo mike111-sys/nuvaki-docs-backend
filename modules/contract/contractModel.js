@@ -112,15 +112,15 @@ const createContract = async (contractData) => {
       safeJsonStringify(product_details),
       safeJsonStringify(partnership_details),
       
-      terms_conditions, termination_clause, confidentiality_clause ? 1 : 0, dispute_resolution, governing_law || 'Kenya',
+      terms_conditions, termination_clause, confidentiality_clause ? 1 : 0, dispute_resolution, governing_law || 'USA',
       
       party_a_signature, party_a_signature_date, party_b_signature, party_b_signature_date, 
       witness_name, witness_signature, witness_date,
       
       status || 'draft', notes,
-      currency_code || 'KES',
-      currency_symbol || 'KSh',
-      currency_name || 'Kenyan Shilling'
+      currency_code || 'USD',
+      currency_symbol || '$',
+      currency_name || 'US Dollar'
     ]
   );
 
@@ -276,9 +276,9 @@ const updateContract = async (contractId, userId, contractData) => {
       witness_name, witness_signature, witness_date,
       
       status, notes,
-      currency_code || 'KES',
-      currency_symbol || 'KSh',
-      currency_name || 'Kenyan Shilling',
+      currency_code || 'USD',
+      currency_symbol || '$',
+      currency_name || 'US Dollar',
       contractId, userId
     ]
   );

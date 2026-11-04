@@ -86,9 +86,9 @@ const saveQuotation = async (req, res) => {
       validity_period: validityPeriod || "30 days",
       notes: notes || "",
       terms_conditions: termsConditions || "",
-      currency_code: currency_code || 'KES',
-      currency_symbol: currency_symbol || 'KSh',
-      currency_name: currency_name || 'Kenyan Shilling',
+      currency_code: currency_code || 'USD',
+      currency_symbol: currency_symbol || '$',
+      currency_name: currency_name || 'US Dollar',
       
       converted_to_invoice: false
     };
@@ -205,9 +205,9 @@ const updateQuotation = async (req, res) => {
       validity_period: validityPeriod || "30 days",
       notes: notes || "",
       terms_conditions: termsConditions || "",
-      currency_code: currency_code || 'KES',
-      currency_symbol: currency_symbol || 'KSh',
-      currency_name: currency_name || 'Kenyan Shilling',
+      currency_code: currency_code || 'USD',
+      currency_symbol: currency_symbol || '$',
+      currency_name: currency_name || 'US Dollar',
     };
 
     // Update quotation

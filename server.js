@@ -28,9 +28,9 @@ const app = express();
 
 // ✅ CORS config
 const allowedOrigins = [
-  "https://bizkitkenya.co.ke",
-  "https://www.bizkitkenya.co.ke",
-  "http://bizkitkenya.co.ke",
+  "https://nuvakidocs.com",
+  "https://www.nuvakidocs.com",
+  "http://nuvakidocs.com",
   "http://localhost:5173",
   "http://localhost:8081",
 ];

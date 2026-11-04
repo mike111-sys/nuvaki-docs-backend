@@ -54,9 +54,9 @@ const createQuotation = async (quotationData) => {
       tax_rate, tax_amount, total_amount,
       payment_terms, delivery_terms, validity_period, notes, terms_conditions,
       converted_to_invoice || false,
-      currency_code || 'KES',
-      currency_symbol || 'KSh',
-      currency_name || 'Kenyan Shilling',
+      currency_code || 'USD',
+      currency_symbol || '$',
+      currency_name || 'US Dollar',
     ]
   );
 
@@ -156,9 +156,9 @@ const updateQuotation = async (quotationId, quotationData) => {
       validity_period,
       notes,
       terms_conditions,
-      currency_code || 'KES',
-      currency_symbol || 'KSh',
-      currency_name || 'Kenyan Shilling',
+      currency_code || 'USD',
+      currency_symbol || '$',
+      currency_name || 'US Dollar',
       quotationId
     ]
   );
