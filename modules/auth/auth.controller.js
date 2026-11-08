@@ -403,7 +403,7 @@ const forgotPassword = async (req, res) => {
     console.error("forgotPassword error:", error);
     return res
       .status(500)
-      .json({ success: false, message: "Something went wrong" });
+      .json({ success: false, message: "Something went wrong, try again later" });
   }
 };
 
