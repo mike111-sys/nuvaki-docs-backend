@@ -59,7 +59,7 @@ const layout = (innerHtml) => `
     <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:32px 28px;">
       <div style="margin-bottom:24px;">
         <img
-          src="https://nuvakidocs.com/assets/logo-BuJecBcf.png"
+          src="https://nuvakidocs.com/assets/full-logo-CIJAGeCo.png"
           alt="Nuvaki Docs"
           width="40"
           style="display:block;max-width:140px;height:auto;border:0;"
