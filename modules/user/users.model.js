@@ -23,8 +23,13 @@ const createUser = async (userData) => {
   const [result] = await pool.query(
     `INSERT INTO users_information
      (id, name, business_name, phone_number, country, email_address, password,
-      trials, created_at, email_verified, google_id, verification_token, verification_expiry)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      trials, created_at, email_verified, google_id, verification_token, verification_expiry,
+      currency_code, currency_symbol, currency_name)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+       CASE WHEN LOWER(TRIM(?)) = 'kenya' THEN 'KES' ELSE 'USD' END,
+       CASE WHEN LOWER(TRIM(?)) = 'kenya' THEN 'KSh' ELSE '$'   END,
+       CASE WHEN LOWER(TRIM(?)) = 'kenya' THEN 'Kenyan Shilling' ELSE 'US Dollar' END
+     )`,
     [
       id,
       name,
@@ -39,6 +44,9 @@ const createUser = async (userData) => {
       google_id,
       verification_token,
       verification_expiry,
+      country,  // <-- for currency_code CASE
+      country,  // <-- for currency_symbol CASE
+      country,  // <-- for currency_name CASE
     ]
   );
 
