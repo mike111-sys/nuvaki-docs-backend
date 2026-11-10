@@ -61,7 +61,7 @@ const layout = (innerHtml) => `
         <img
           src="https://nuvakidocs.com/assets/full-logo-CIJAGeCo.png"
           alt="Nuvaki Docs"
-          width="40"
+          width="60"
           style="display:block;max-width:140px;height:auto;border:0;"
         />
       </div>
