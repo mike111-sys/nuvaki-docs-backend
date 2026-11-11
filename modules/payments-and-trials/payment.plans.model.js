@@ -59,7 +59,7 @@ const findPaymentPlanByIdWithBonus = async (planId, currency = "KES") => {
 function shapePlanForCurrency(plan, currency) {
   const safePrice =
     currency === "USD"
-      ? Math.max(3.0, Number(plan.price) || 3.0) // Paystack minimum
+      ? Math.max(1.0, Number(plan.price) || 1.0) // Paystack minimum
       : Number(plan.price);
 
   return {
